@@ -2,7 +2,18 @@ package Mojolicious::Plugin::YAML;
 
 use Mojo::Base 'Mojolicious::Plugin';
 
-use YAML 'Dump';
+use Carp ();
+
+our $YAML;
+BEGIN {
+  if (eval { require YAML::PP::LibYAML; 1 }) {
+    $YAML = YAML::PP::LibYAML->new;
+  } elsif (eval { require YAML::PP; 1 }) {
+    $YAML = YAML::PP->new;
+  } else {
+    Carp::croak 'One of YAML::PP or YAML::PP::LibYAML is required';
+  }
+}
 
 sub register {
   my ($plugin, $app, $conf) = @_;
@@ -23,7 +34,7 @@ sub register {
     delete $options->{encoding};
 
     $c->app->types->content_type($c, {ext => 'yaml'});
-    $$output = Dump delete $c->stash->{yaml};
+    $$output = $YAML->dump_string(delete $c->stash->{yaml});
   });
 
   # Set "handler" value automatically if "yaml" value is set already

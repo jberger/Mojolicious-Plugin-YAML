@@ -1,2 +1,3 @@
 requires 'Mojolicious';
-requires 'YAML';
+requires 'YAML::PP';
+recommends 'YAML::PP::LibYAML';
