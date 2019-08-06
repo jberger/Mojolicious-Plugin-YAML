@@ -7,9 +7,9 @@ use Carp ();
 our $YAML;
 BEGIN {
   if (eval { require YAML::PP::LibYAML; 1 }) {
-    $YAML = YAML::PP::LibYAML->new;
+    $YAML = 'YAML::PP::LibYAML';
   } elsif (eval { require YAML::PP; 1 }) {
-    $YAML = YAML::PP->new;
+    $YAML = 'YAML::PP';
   } else {
     Carp::croak 'One of YAML::PP or YAML::PP::LibYAML is required';
   }
@@ -27,14 +27,18 @@ sub register {
   ]];
   $app->types->type($_ => $types) for qw/yml yaml/;
 
+  my $yaml = $YAML->new;
+  $app->helper('yaml.dump' => sub { $yaml->dump_string($_[1]) });
+
   $app->renderer->add_handler(yaml => sub {
     my ($renderer, $c, $output, $options) = @_;
 
     # Disable automatic encoding
     delete $options->{encoding};
 
-    $c->app->types->content_type($c, {ext => 'yaml'});
-    $$output = $YAML->dump_string(delete $c->stash->{yaml});
+    my $app = $c->app;
+    $app->types->content_type($c, {ext => 'yaml'});
+    $$output = $app->renderer->get_helper('yaml.dump')->($c, delete $c->stash->{yaml});
   });
 
   # Set "handler" value automatically if "yaml" value is set already
